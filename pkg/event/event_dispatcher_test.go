@@ -2,6 +2,7 @@ package event
 
 import (
 	"sync"
+	"testing"
 	"time"
 
 	"github.com/stretchr/testify/suite"
@@ -33,8 +34,7 @@ type TestEventHandler struct {
 	ID int
 }
 
-func (teh *TestEventHandler) Handle(e EventInterface, wh *sync.WaitGroup) {
-	// Do something
+func (teh *TestEventHandler) Handle(e EventInterface, wg *sync.WaitGroup) {
 }
 
 type EventDispatcherTestSuite struct {
@@ -74,6 +74,10 @@ func (suite *EventDispatcherTestSuite) SetupTest() {
 		}{A: 1, B: 2},
 		occurredAt: time.Now(),
 	}
+}
+
+func TestSuite(t *testing.T) {
+	suite.Run(t, new(EventDispatcherTestSuite))
 }
 
 func (suite *EventDispatcherTestSuite) TestEventDispatcher_Register_SameNameAndHandlerError() {
