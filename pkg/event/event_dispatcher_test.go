@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
@@ -144,4 +145,31 @@ func (suite *EventDispatcherTestSuite) TestEventDispatcher_Dispatch() {
 	suite.eventDispatcher.Dispatch(&suite.event)
 	meh.AssertNumberOfCalls(suite.T(), "Handle", 2)
 	meh2.AssertNumberOfCalls(suite.T(), "Handle", 2)
+}
+
+func (suite *EventDispatcherTestSuite) TestEventDispatcher_Remove() {
+	//Test Event 1
+	suite.eventDispatcher.Register(suite.event.name, &suite.handler)
+	suite.eventDispatcher.Register(suite.event.name, &suite.handler2)
+	suite.Equal(2, len(suite.eventDispatcher.handlers[suite.event.name]))
+
+	//Test Event 2
+	suite.eventDispatcher.Register(suite.event2.name, &suite.handler)
+	suite.eventDispatcher.Register(suite.event2.name, &suite.handler3)
+	suite.Equal(2, len(suite.eventDispatcher.handlers[suite.event2.name]))
+
+	suite.eventDispatcher.Remove(suite.event.name, &suite.handler)
+	suite.Equal(1, len(suite.eventDispatcher.handlers[suite.event.name]))
+	assert.Equal(suite.T(), &suite.handler2, suite.eventDispatcher.handlers[suite.event.name][0])
+	suite.Equal(2, len(suite.eventDispatcher.handlers[suite.event2.name]))
+
+	suite.eventDispatcher.Remove(suite.event.name, &suite.handler2)
+	suite.Equal(0, len(suite.eventDispatcher.handlers[suite.event.name]))
+
+	suite.eventDispatcher.Remove(suite.event2.name, &suite.handler3)
+	suite.Equal(1, len(suite.eventDispatcher.handlers[suite.event2.name]))
+	assert.Equal(suite.T(), &suite.handler, suite.eventDispatcher.handlers[suite.event2.name][0])
+
+	suite.eventDispatcher.Remove(suite.event2.name, &suite.handler)
+	suite.Equal(0, len(suite.eventDispatcher.handlers[suite.event2.name]))
 }
