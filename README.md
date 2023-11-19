@@ -17,7 +17,7 @@ Structure:
     ```go 
     Handle(event EventInterface, waitGroup *sync.WaitGroup) 
     ```
-    * Executed when an event is dispatched
+    * Executed when an event is dispatched. <b>Must call waitGroup.Done()</b> after workload
   * EventDispatcher
     ------------------------------------
     ```go
