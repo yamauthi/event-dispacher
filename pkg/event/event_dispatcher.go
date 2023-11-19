@@ -63,3 +63,7 @@ func (ed *EventDispatcher) Has(eventName string, handler EventHandlerInterface) 
 
 	return false
 }
+
+func (ed *EventDispatcher) Clear() {
+	ed.handlers = make(map[string][]EventHandlerInterface)
+}

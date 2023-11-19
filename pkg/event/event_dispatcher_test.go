@@ -195,5 +195,20 @@ func (suite *EventDispatcherTestSuite) TestEventDispatcher_Has() {
 	assert.False(suite.T(), suite.eventDispatcher.Has(suite.event.name, &suite.handler))
 	assert.True(suite.T(), suite.eventDispatcher.Has(suite.event.name, &suite.handler2))
 	assert.True(suite.T(), suite.eventDispatcher.Has(suite.event2.name, &suite.handler))
+}
 
+func (suite *EventDispatcherTestSuite) TestEventDispatcher_Clear() {
+	//Test Event 1
+	suite.eventDispatcher.Register(suite.event.name, &suite.handler)
+	suite.eventDispatcher.Register(suite.event.name, &suite.handler2)
+
+	//Test Event 2
+	suite.eventDispatcher.Register(suite.event2.name, &suite.handler)
+	suite.eventDispatcher.Register(suite.event2.name, &suite.handler3)
+
+	suite.Equal(2, len(suite.eventDispatcher.handlers[suite.event.name]))
+	suite.Equal(2, len(suite.eventDispatcher.handlers[suite.event2.name]))
+
+	suite.eventDispatcher.Clear()
+	suite.Equal(0, len(suite.eventDispatcher.handlers))
 }
