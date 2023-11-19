@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -35,6 +36,15 @@ type TestEventHandler struct {
 }
 
 func (teh *TestEventHandler) Handle(e EventInterface, wg *sync.WaitGroup) {
+}
+
+type MockEventHandler struct {
+	mock.Mock
+}
+
+func (meh *MockEventHandler) Handle(e EventInterface, wg *sync.WaitGroup) {
+	meh.Called(e)
+	wg.Done()
 }
 
 type EventDispatcherTestSuite struct {
@@ -87,7 +97,7 @@ func (suite *EventDispatcherTestSuite) TestEventDispatcher_Register_SameNameAndH
 
 	err = suite.eventDispatcher.Register(suite.event.name, &suite.handler)
 	suite.Equal(ErrHandlerAlreadyRegistered, err)
-	suite.Equal(2, len(suite.eventDispatcher.handlers[suite.event.name]))
+	suite.Equal(1, len(suite.eventDispatcher.handlers[suite.event.name]))
 }
 
 func (suite *EventDispatcherTestSuite) TestEventDispatcher_Register() {
@@ -112,4 +122,26 @@ func (suite *EventDispatcherTestSuite) TestEventDispatcher_Register() {
 	err = suite.eventDispatcher.Register(suite.event2.name, &suite.handler2)
 	suite.Nil(err)
 	suite.Equal(2, len(suite.eventDispatcher.handlers[suite.event2.name]))
+}
+
+func (suite *EventDispatcherTestSuite) TestEventDispatcher_Dispatch() {
+	meh := MockEventHandler{}
+	meh2 := MockEventHandler{}
+
+	meh.On("Handle", &suite.event)
+	meh2.On("Handle", &suite.event)
+
+	suite.eventDispatcher.Register(suite.event.name, &meh)
+	suite.eventDispatcher.Register(suite.event.name, &meh2)
+
+	suite.eventDispatcher.Dispatch(&suite.event)
+
+	meh.AssertExpectations(suite.T())
+	meh2.AssertExpectations(suite.T())
+	meh.AssertNumberOfCalls(suite.T(), "Handle", 1)
+	meh2.AssertNumberOfCalls(suite.T(), "Handle", 1)
+
+	suite.eventDispatcher.Dispatch(&suite.event)
+	meh.AssertNumberOfCalls(suite.T(), "Handle", 2)
+	meh2.AssertNumberOfCalls(suite.T(), "Handle", 2)
 }
