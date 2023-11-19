@@ -91,6 +91,67 @@ func TestSuite(t *testing.T) {
 	suite.Run(t, new(EventDispatcherTestSuite))
 }
 
+func (suite *EventDispatcherTestSuite) TestEventDispatcher_Clear() {
+	//Test Event 1
+	suite.eventDispatcher.Register(suite.event.name, &suite.handler)
+	suite.eventDispatcher.Register(suite.event.name, &suite.handler2)
+
+	//Test Event 2
+	suite.eventDispatcher.Register(suite.event2.name, &suite.handler)
+	suite.eventDispatcher.Register(suite.event2.name, &suite.handler3)
+
+	suite.Equal(2, len(suite.eventDispatcher.handlers[suite.event.name]))
+	suite.Equal(2, len(suite.eventDispatcher.handlers[suite.event2.name]))
+
+	suite.eventDispatcher.Clear()
+	suite.Equal(0, len(suite.eventDispatcher.handlers))
+}
+
+func (suite *EventDispatcherTestSuite) TestEventDispatcher_Dispatch() {
+	meh := MockEventHandler{}
+	meh2 := MockEventHandler{}
+
+	meh.On("Handle", &suite.event)
+	meh2.On("Handle", &suite.event)
+
+	suite.eventDispatcher.Register(suite.event.name, &meh)
+	suite.eventDispatcher.Register(suite.event.name, &meh2)
+
+	suite.eventDispatcher.Dispatch(&suite.event)
+
+	meh.AssertExpectations(suite.T())
+	meh2.AssertExpectations(suite.T())
+	meh.AssertNumberOfCalls(suite.T(), "Handle", 1)
+	meh2.AssertNumberOfCalls(suite.T(), "Handle", 1)
+
+	suite.eventDispatcher.Dispatch(&suite.event)
+	meh.AssertNumberOfCalls(suite.T(), "Handle", 2)
+	meh2.AssertNumberOfCalls(suite.T(), "Handle", 2)
+}
+
+func (suite *EventDispatcherTestSuite) TestEventDispatcher_Has() {
+	//Test Event 1
+	suite.eventDispatcher.Register(suite.event.name, &suite.handler)
+	suite.eventDispatcher.Register(suite.event.name, &suite.handler2)
+
+	//Test Event 2
+	suite.eventDispatcher.Register(suite.event2.name, &suite.handler)
+	suite.eventDispatcher.Register(suite.event2.name, &suite.handler3)
+
+	assert.True(suite.T(), suite.eventDispatcher.Has(suite.event.name, &suite.handler))
+	assert.True(suite.T(), suite.eventDispatcher.Has(suite.event.name, &suite.handler2))
+	assert.False(suite.T(), suite.eventDispatcher.Has(suite.event.name, &suite.handler3))
+
+	assert.True(suite.T(), suite.eventDispatcher.Has(suite.event2.name, &suite.handler))
+	assert.True(suite.T(), suite.eventDispatcher.Has(suite.event2.name, &suite.handler3))
+	assert.False(suite.T(), suite.eventDispatcher.Has(suite.event2.name, &suite.handler2))
+
+	suite.eventDispatcher.Remove(suite.event.name, &suite.handler)
+	assert.False(suite.T(), suite.eventDispatcher.Has(suite.event.name, &suite.handler))
+	assert.True(suite.T(), suite.eventDispatcher.Has(suite.event.name, &suite.handler2))
+	assert.True(suite.T(), suite.eventDispatcher.Has(suite.event2.name, &suite.handler))
+}
+
 func (suite *EventDispatcherTestSuite) TestEventDispatcher_Register_SameNameAndHandlerError() {
 	err := suite.eventDispatcher.Register(suite.event.name, &suite.handler)
 	suite.Nil(err)
@@ -125,28 +186,6 @@ func (suite *EventDispatcherTestSuite) TestEventDispatcher_Register() {
 	suite.Equal(2, len(suite.eventDispatcher.handlers[suite.event2.name]))
 }
 
-func (suite *EventDispatcherTestSuite) TestEventDispatcher_Dispatch() {
-	meh := MockEventHandler{}
-	meh2 := MockEventHandler{}
-
-	meh.On("Handle", &suite.event)
-	meh2.On("Handle", &suite.event)
-
-	suite.eventDispatcher.Register(suite.event.name, &meh)
-	suite.eventDispatcher.Register(suite.event.name, &meh2)
-
-	suite.eventDispatcher.Dispatch(&suite.event)
-
-	meh.AssertExpectations(suite.T())
-	meh2.AssertExpectations(suite.T())
-	meh.AssertNumberOfCalls(suite.T(), "Handle", 1)
-	meh2.AssertNumberOfCalls(suite.T(), "Handle", 1)
-
-	suite.eventDispatcher.Dispatch(&suite.event)
-	meh.AssertNumberOfCalls(suite.T(), "Handle", 2)
-	meh2.AssertNumberOfCalls(suite.T(), "Handle", 2)
-}
-
 func (suite *EventDispatcherTestSuite) TestEventDispatcher_Remove() {
 	//Test Event 1
 	suite.eventDispatcher.Register(suite.event.name, &suite.handler)
@@ -172,43 +211,4 @@ func (suite *EventDispatcherTestSuite) TestEventDispatcher_Remove() {
 
 	suite.eventDispatcher.Remove(suite.event2.name, &suite.handler)
 	suite.Equal(0, len(suite.eventDispatcher.handlers[suite.event2.name]))
-}
-
-func (suite *EventDispatcherTestSuite) TestEventDispatcher_Has() {
-	//Test Event 1
-	suite.eventDispatcher.Register(suite.event.name, &suite.handler)
-	suite.eventDispatcher.Register(suite.event.name, &suite.handler2)
-
-	//Test Event 2
-	suite.eventDispatcher.Register(suite.event2.name, &suite.handler)
-	suite.eventDispatcher.Register(suite.event2.name, &suite.handler3)
-
-	assert.True(suite.T(), suite.eventDispatcher.Has(suite.event.name, &suite.handler))
-	assert.True(suite.T(), suite.eventDispatcher.Has(suite.event.name, &suite.handler2))
-	assert.False(suite.T(), suite.eventDispatcher.Has(suite.event.name, &suite.handler3))
-
-	assert.True(suite.T(), suite.eventDispatcher.Has(suite.event2.name, &suite.handler))
-	assert.True(suite.T(), suite.eventDispatcher.Has(suite.event2.name, &suite.handler3))
-	assert.False(suite.T(), suite.eventDispatcher.Has(suite.event2.name, &suite.handler2))
-
-	suite.eventDispatcher.Remove(suite.event.name, &suite.handler)
-	assert.False(suite.T(), suite.eventDispatcher.Has(suite.event.name, &suite.handler))
-	assert.True(suite.T(), suite.eventDispatcher.Has(suite.event.name, &suite.handler2))
-	assert.True(suite.T(), suite.eventDispatcher.Has(suite.event2.name, &suite.handler))
-}
-
-func (suite *EventDispatcherTestSuite) TestEventDispatcher_Clear() {
-	//Test Event 1
-	suite.eventDispatcher.Register(suite.event.name, &suite.handler)
-	suite.eventDispatcher.Register(suite.event.name, &suite.handler2)
-
-	//Test Event 2
-	suite.eventDispatcher.Register(suite.event2.name, &suite.handler)
-	suite.eventDispatcher.Register(suite.event2.name, &suite.handler3)
-
-	suite.Equal(2, len(suite.eventDispatcher.handlers[suite.event.name]))
-	suite.Equal(2, len(suite.eventDispatcher.handlers[suite.event2.name]))
-
-	suite.eventDispatcher.Clear()
-	suite.Equal(0, len(suite.eventDispatcher.handlers))
 }
