@@ -51,3 +51,15 @@ func (ed *EventDispatcher) Remove(eventName string, handler EventHandlerInterfac
 		}
 	}
 }
+
+func (ed *EventDispatcher) Has(eventName string, handler EventHandlerInterface) bool {
+	if handlers, ok := ed.handlers[eventName]; ok {
+		for _, h := range handlers {
+			if h == handler {
+				return true
+			}
+		}
+	}
+
+	return false
+}
